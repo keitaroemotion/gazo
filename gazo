@@ -25,7 +25,7 @@ image      = Image.new(mode="RGB", size=SIZE_NORMAL, color="white")
 image_draw = ImageDraw.ImageDraw(image)
 
 point_start = (12, 2)
-diameter       = 100
+diameter    = 100
 
 add_circle(image_draw, point_start)
 
