@@ -33,6 +33,7 @@ def add_circle_reverse(image_draw, point_start=(0, 0), label="", diameter=100):
     point_end    = (x(point_start) + diameter, y(point_start) - diameter)
     _point_end   = (x(point_end),              y(SIZE_NORMAL) - y(point_end) - diameter)
     image_draw.arc(xy=[_point_start, _point_end], start=0, end=360, fill="black")
+    return _point_end
 
 def move(point, dx, dy):
     return (point[0] + dx, point[1] - dy)
@@ -42,12 +43,14 @@ def add_circle(image_draw, point_start=(0, 0), label="", diameter=100):
     point_end   = (x(point_start) + diameter, y(point_start) + diameter)
     image_draw.arc(xy=[point_start, point_end], start=0, end=360, fill="black")
     write_text(image_draw, move(point_end, -1 * diameter/2, diameter/2), label)
+    return point_end
 
 def add_oval(image_draw, point_start=(0, 0), label="", diameter=100):
     point_start = (x(point_start),            y(point_start))
     point_end   = (x(point_start) + diameter * 2, y(point_start) + diameter)
     image_draw.arc(xy=[point_start, point_end], start=0, end=360, fill="black")
     write_text(image_draw, move(point_end, -1.7 * diameter, diameter/1.7), label)
+    return point_end
 
 def match(pattern, string):
     return re.match(pattern, string) != None
@@ -75,6 +78,21 @@ def left(lsp):
 def right(lsp):
     return lsp[1].strip()
 
+def ovals_related(image_draw, point_start, diameter, line, dict):
+    if match(".+>.+", line):
+        lsp         = line.split(">")
+        object_from = left(lsp)
+        object_to   = right(lsp)
+
+        if object_from in dict:
+            point_end_from = add_oval(image_draw, point_start, dict[object_from], diameter=diameter/2)
+        if object_to   in dict:
+            point_start_to = move(point_start, 200, 0)
+            point_end_to = add_oval(image_draw, point_start_to, dict[object_to], diameter=diameter/2)
+
+        image_draw.line(point_start_to, fill="black")
+        image_draw.line(move(point_end_from, 0, diameter/4) + move(point_end_to, -1 * diameter, diameter/4), fill="black")
+
 def draw(dsl_array):
     dict = {}
     image       = Image.new(mode="RGB", size=SIZE_NORMAL, color="white")
@@ -85,18 +103,8 @@ def draw(dsl_array):
     for line in dsl_array:
         if match(".+:.+", line):
             lsp = line.split(":"); dict[left(lsp)] = right(lsp)
-        if match(".+>.+", line):
-            lsp         = line.split(">")
-            object_from = left(lsp)
-            object_to   = right(lsp)
+        ovals_related(image_draw, point_start, diameter, line, dict)    
 
-            if object_from in dict:
-                add_oval(image_draw, point_start, dict[object_from], diameter=50)
-            if object_to   in dict:
-                add_oval(image_draw, move(point_start, 200, 0), dict[object_to], diameter=50)
-            # 
-            # XXX draw arrow between two ovals
-            #
     del image_draw
     image.save(image_path, "PNG")
 
