@@ -78,7 +78,7 @@ def left(lsp):
 def right(lsp):
     return lsp[1].strip()
 
-def ovals_related(canvas, left_start, diameter, line, dict, size_inter_ovals=200):
+def create_ovals(canvas, left_start, diameter, line, dict, size_inter_ovals=200):
     if match(".+>.+", line):
         ovals      = line.split(">")
         left_oval  = left(ovals)
@@ -109,7 +109,7 @@ def draw(dsl_array):
 
     for line in dsl_array:
         dict = assign_values(line, dict)
-        ovals_related(canvas, start, diameter, line, dict)    
+        create_ovals(canvas, start, diameter, line, dict)    
 
     del canvas
     image.save(image_path, "PNG")
