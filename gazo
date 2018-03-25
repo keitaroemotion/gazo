@@ -101,11 +101,11 @@ def assign_values(line, dict):
     return dict    
 
 def draw(dsl_array):
-    dict        = {}
-    image       = Image.new(mode="RGB", size=SIZE_NORMAL, color="white")
-    canvas      = ImageDraw.ImageDraw(image)
-    start       = (12, 12)
-    diameter    = 100
+    dict     = {}
+    image    = Image.new(mode="RGB", size=SIZE_NORMAL, color="white")
+    canvas   = ImageDraw.ImageDraw(image)
+    start    = (12, 12)
+    diameter = 100
 
     for line in dsl_array:
         dict = assign_values(line, dict)
