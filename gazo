@@ -5,9 +5,18 @@
 # pip3 install --upgrade pip
 #
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
+import os.path
+import re
+import subprocess
+import sys
 
 SIZE_NORMAL = (800, 600)
+ARGS        = sys.argv
+image_path  = "default.png"
+
+def detect_file(args):
+    return list(filter(lambda f: os.path.isfile(f), args))[1]
 
 def x(tuple):
     return tuple[0]
@@ -15,19 +24,83 @@ def x(tuple):
 def y(tuple):
     return tuple[1]   
 
-def add_circle(image_draw, point_start=(0, 0)):
-    _point_start  = (x(point_start),            y(SIZE_NORMAL) - y(point_start) - diameter)
-    point_end     = (x(point_start) + diameter, y(point_start) - diameter)
-    _point_end    = (x(point_end),              y(SIZE_NORMAL) - y(point_end) - diameter)
+def write_text(image_draw, point, label):
+    _font = ImageFont.truetype("fonts/Helvetica-Normal.ttf", 15)
+    image_draw.text(point, label, font=_font, fill="black")
+
+def add_circle_reverse(image_draw, point_start=(0, 0), label="", diameter=100):
+    _point_start = (x(point_start),            y(SIZE_NORMAL) - y(point_start) - diameter)
+    point_end    = (x(point_start) + diameter, y(point_start) - diameter)
+    _point_end   = (x(point_end),              y(SIZE_NORMAL) - y(point_end) - diameter)
     image_draw.arc(xy=[_point_start, _point_end], start=0, end=360, fill="black")
 
-image      = Image.new(mode="RGB", size=SIZE_NORMAL, color="white")
-image_draw = ImageDraw.ImageDraw(image)
+def move(point, dx, dy):
+    return (point[0] + dx, point[1] - dy)
 
-point_start = (12, 2)
-diameter    = 100
+def add_circle(image_draw, point_start=(0, 0), label="", diameter=100):
+    point_start = (x(point_start),            y(point_start))
+    point_end   = (x(point_start) + diameter, y(point_start) + diameter)
+    image_draw.arc(xy=[point_start, point_end], start=0, end=360, fill="black")
+    write_text(image_draw, move(point_end, -1 * diameter/2, diameter/2), label)
 
-add_circle(image_draw, point_start)
+def add_oval(image_draw, point_start=(0, 0), label="", diameter=100):
+    point_start = (x(point_start),            y(point_start))
+    point_end   = (x(point_start) + diameter * 2, y(point_start) + diameter)
+    image_draw.arc(xy=[point_start, point_end], start=0, end=360, fill="black")
+    write_text(image_draw, move(point_end, -1.7 * diameter, diameter/1.7), label)
 
-del image_draw
-image.save("aaa.png", "PNG")
+def match(pattern, string):
+    return re.match(pattern, string) != None
+
+def is_image(filename):
+    return match(".*(png|jpg|gif)$", filename)
+
+def parse_dsl(dsl_path):
+    with open(dsl_path) as f:
+        content = f.readlines()
+    return [x.strip() for x in content] 
+
+def set_image_path(line):
+    if is_image(line):
+        global image_path
+        image_path = line
+    return line   
+
+def convert_dsl(dsl_array):
+    return list(map(lambda l: set_image_path(l), dsl_array))
+
+def left(lsp):
+    return lsp[0].strip()
+
+def right(lsp):
+    return lsp[1].strip()
+
+def draw(dsl_array):
+    dict = {}
+    image       = Image.new(mode="RGB", size=SIZE_NORMAL, color="white")
+    image_draw  = ImageDraw.ImageDraw(image)
+    point_start = (12, 12)
+    diameter    = 100
+
+    for line in dsl_array:
+        if match(".+:.+", line):
+            lsp = line.split(":"); dict[left(lsp)] = right(lsp)
+        if match(".+>.+", line):
+            lsp         = line.split(">")
+            object_from = left(lsp)
+            object_to   = right(lsp)
+
+            if object_from in dict:
+                add_oval(image_draw, point_start, dict[object_from], diameter=50)
+            if object_to   in dict:
+                add_oval(image_draw, move(point_start, 200, 0), dict[object_to], diameter=50)
+            # 
+            # XXX draw arrow between two ovals
+            #
+    del image_draw
+    image.save(image_path, "PNG")
+
+instructions = convert_dsl(parse_dsl(detect_file(ARGS)))
+draw(instructions)
+
+subprocess.run(["open", image_path])
